@@ -1,18 +1,29 @@
 import http.client
 import json
+import os
 import ssl
 
+from dotenv import load_dotenv
 
-with open('tokens.json', 'r', encoding='utf-8') as file:
-    loaded_data = json.load(file)
+# Загружает переменные из файла .env рядом со скриптом
+load_dotenv()
 
-tt = loaded_data['tbank_api_token']
-tg = loaded_data['telegram_bot_token']
-chat_id = loaded_data['telegram_chat_id']
-main_account = loaded_data['tbank_account_number']
-agreement_number = loaded_data['overnight_agreement_number']
-certfile = loaded_data['certfile']
-keyfile = loaded_data['keyfile']
+
+def require(name: str) -> str:
+    """Возвращает значение переменной из .env или понятную ошибку."""
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f'Переменная {name} не задана — добавьте её в файл .env')
+    return value
+
+
+tt = require('TBANK_API_TOKEN')
+tg = require('TELEGRAM_BOT_TOKEN')
+chat_id = require('TELEGRAM_CHAT_ID')
+main_account = require('TBANK_ACCOUNT_NUMBER')
+agreement_number = require('OVERNIGHT_AGREEMENT_NUMBER')
+certfile = require('CERTFILE')
+keyfile = require('KEYFILE')
 
 def get_ballance(token=tt, account=main_account):
     conn = http.client.HTTPSConnection("business.tbank.ru")

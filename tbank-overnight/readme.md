@@ -17,7 +17,7 @@
 * Автоматическое пополнение overnight-соглашения
 * Поддержка **mTLS (client certificate)**
 * Уведомления в Telegram
-* Минимум зависимостей (чистый Python)
+* Минимум зависимостей (единственная — `python-dotenv`)
 * Подходит для ежедневного автозапуска
 
 ---
@@ -42,8 +42,7 @@
 * Оформленное **overnight-соглашение**
 * SSL-сертификат и приватный ключ для mTLS
 * Telegram-бот (через @BotFather)
-
-Дополнительные библиотеки не требуются — используются стандартные модули Python.
+* Библиотека **python-dotenv** (`pip install python-dotenv`) — единственная внешняя зависимость
 
 ---
 
@@ -52,7 +51,9 @@
 ```
 .
 ├── overnight.py        # основной скрипт
-├── .env                # конфигурация и секреты (НЕ коммитить)
+├── overnight.ipynb     # ноутбук с той же логикой
+├── .env.example        # шаблон конфигурации (можно коммитить)
+├── .env                # реальные секреты (НЕ коммитить, уже в .gitignore)
 ├── cert.pem            # клиентский сертификат
 ├── key.pem             # приватный ключ
 └── README.md
@@ -62,39 +63,55 @@
 
 ## 🔐 Конфигурация
 
-Создайте файл `tokens.json`:
+Все секреты хранятся в файле `.env` (не в `.json`).
 
-```json
-{
-  "tbank_api_token": "YOUR_TBANK_API_TOKEN",
-  "telegram_bot_token": "YOUR_TELEGRAM_BOT_TOKEN",
-  "telegram_chat_id": "YOUR_CHAT_ID",
-  "tbank_account_number": "YOUR_ACCOUNT_NUMBER",
-  "overnight_agreement_number": "YOUR_OVERNIGHT_AGREEMENT",
-  "certfile": "cert.pem",
-  "keyfile": "key.pem"
-}
+Создайте его из шаблона:
+
+```bash
+cp .env.example .env
 ```
+
+И заполните своими значениями:
+
+```env
+# --- T-Bank Business OpenAPI ---
+TBANK_API_TOKEN=YOUR_TBANK_API_TOKEN
+TBANK_ACCOUNT_NUMBER=YOUR_ACCOUNT_NUMBER
+OVERNIGHT_AGREEMENT_NUMBER=YOUR_OVERNIGHT_AGREEMENT
+
+# --- mTLS ---
+CERTFILE=cert.pem
+KEYFILE=key.pem
+
+# --- Telegram-бот ---
+TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN
+TELEGRAM_CHAT_ID=YOUR_CHAT_ID
+```
+
+Значения подгружаются через `python-dotenv` при запуске скрипта (`load_dotenv()`), при этом уже заданные переменные окружения имеют приоритет над файлом.
 
 ⚠️ **Важно:**
 
-* `tokens.json`, `*.pem` **не должны попадать в GitHub**
-* обязательно добавьте их в `.gitignore`
+* `.env`, `*.pem`, `*.key` **не должны попадать в GitHub**
+* `.env` и сертификаты уже добавлены в `.gitignore` (корень репозитория)
+* если какой-то переменной нет, скрипт завершится с понятной ошибкой:
+  `Переменная XXX не задана — добавьте её в файл .env`
 
 ---
 
 ## ▶️ Запуск
 
-Обычный запуск:
+Установите зависимость и запустите скрипт:
 
 ```bash
+pip install python-dotenv
 python overnight.py
 ```
 
 Пример автозапуска через `cron` (удобно использовать на Linux, так как overnight необходимо выставлять **до 17:00**, пример — каждый рабочий день в 16:45):
 
 ```bash
-45 18 * * 1-5 /usr/bin/python3 /path/to/overnight.py
+45 16 * * 1-5 /usr/bin/python3 /path/to/overnight.py
 ```
 
 ---
